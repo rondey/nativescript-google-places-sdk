@@ -1,4 +1,5 @@
 import { ios } from 'tns-core-modules/application';
+import * as utils from "tns-core-modules/utils/utils";
 import { PlaceCoordinates, PlaceResult, PlaceViewport, ShowOptions } from './autocomplete.common';
 
 class AutocompleteViewControllerDelegateImpl extends NSObject implements GMSAutocompleteViewControllerDelegate {
@@ -49,7 +50,8 @@ class AutocompleteViewControllerDelegateImpl extends NSObject implements GMSAuto
       rating: place.rating,
       userRatingsTotal: place.userRatingsTotal,
       viewport: this.boundsToViewport(place.viewport),
-      websiteUri: place.website ? place.website.absoluteString : null
+      websiteUri: place.website ? place.website.absoluteString : null,
+      types: place.types ? utils.ios.collections.nsArrayToJSArray(place.types) : null,
     });
   }
 
@@ -123,6 +125,10 @@ export class PlaceAutocomplete {
 
           if (fields.indexOf('website_uri') > -1) {
             selectedFields |= GMSPlaceField.Website;
+          }
+
+          if (fields.indexOf('types') > -1) {
+            selectedFields |= GMSPlaceField.Types;
           }
 
           placeFields = selectedFields;

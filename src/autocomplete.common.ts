@@ -8,7 +8,9 @@ type PlaceFields =
   'rating' |
   'user_ratings_total' |
   'viewport' |
-  'website_uri';
+  'website_uri' |
+  'types' |
+  "utc_offset";
 
 export interface PlaceCoordinates {
   latitude: number;
@@ -31,6 +33,8 @@ export interface PlaceResult {
   userRatingsTotal?: number;
   viewport?: PlaceViewport;
   websiteUri?: string;
+  types?: string[];
+  utcOffset?: number;
 }
 
 export interface ShowOptions {

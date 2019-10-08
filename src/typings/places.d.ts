@@ -686,6 +686,7 @@ declare module com {
                 public getLatLng(): com.google.android.gms.maps.model.LatLng;
                 public getId(): string;
                 public getOpeningHours(): com.google.android.libraries.places.api.model.OpeningHours;
+                public getUtcOffsetMinutes(): java.lang.Integer;
               }
               export module Place {
                 export abstract class Builder {
@@ -708,6 +709,7 @@ declare module com {
                   public setAddress(param0: string): com.google.android.libraries.places.api.model.Place.Builder;
                   public setId(param0: string): com.google.android.libraries.places.api.model.Place.Builder;
                   public setLatLng(param0: com.google.android.gms.maps.model.LatLng): com.google.android.libraries.places.api.model.Place.Builder;
+                  public setUtcOffsetMinutes(param0: java.lang.Integer): com.google.android.libraries.places.api.model.Place.Builder;
                   public build(): com.google.android.libraries.places.api.model.Place;
                 }
                 export class Field extends android.os.Parcelable {
@@ -727,6 +729,7 @@ declare module com {
                   public static USER_RATINGS_TOTAL: com.google.android.libraries.places.api.model.Place.Field;
                   public static VIEWPORT: com.google.android.libraries.places.api.model.Place.Field;
                   public static WEBSITE_URI: com.google.android.libraries.places.api.model.Place.Field;
+                  public static UTC_OFFSET: com.google.android.libraries.places.api.model.Place.Field;
                   public static CREATOR: android.os.Parcelable.Creator<com.google.android.libraries.places.api.model.Place.Field>;
                   public describeContents(): number;
                   public writeToParcel(param0: android.os.Parcel, param1: number): void;
@@ -2209,6 +2212,7 @@ declare module com {
               public getAttributions(): java.util.List<string>;
               public getViewport(): com.google.android.gms.maps.model.LatLngBounds;
               public getRating(): java.lang.Double;
+              public getUtcOffsetMinutes(): java.lang.Integer;
             }
           }
         }

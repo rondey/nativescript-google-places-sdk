@@ -10,6 +10,14 @@ import AutocompleteActivity = com.google.android.libraries.places.widget.Autocom
 export class PlaceAutocomplete {
   private static readonly PLACE_AUTOCOMPLETE_REQUEST_CODE = 101;
 
+  private static convertEnumArrayJavaToStringArrayJavascript(arrayNative: native.Array<any>) {
+    const array = [];
+    for ( let i = 0; i < arrayNative.length; ++i) {
+      array[i] = arrayNative[i].toString();
+    }
+    return array;
+  }
+
   private static latLngToPlaceCoordinates(coordinates: LatLng): PlaceCoordinates {
     if (!coordinates) {
       return null;
@@ -90,6 +98,14 @@ export class PlaceAutocomplete {
           selectedFields = selectedFields.concat(Place.Field.WEBSITE_URI);
         }
 
+        if (fields.indexOf('types') > -1) {
+          selectedFields = selectedFields.concat(Place.Field.TYPES);
+        }
+
+        if (fields.indexOf('utc_offset') > -1) {
+          selectedFields = selectedFields.concat(Place.Field.UTC_OFFSET);
+        }
+
         fieldsSetting = java.util.Arrays.asList(selectedFields);
       }
 
@@ -126,7 +142,9 @@ export class PlaceAutocomplete {
               rating: place.getRating() ? place.getRating().doubleValue() : null,
               userRatingsTotal: place.getUserRatingsTotal() ? place.getUserRatingsTotal().intValue() : null,
               viewport: this.viewportToPlaceViewport(place.getViewport()),
-              websiteUri: place.getWebsiteUri() ? place.getWebsiteUri().toString() : null
+              websiteUri: place.getWebsiteUri() ? place.getWebsiteUri().toString() : null,
+              types: place.getTypes() ? this.convertEnumArrayJavaToStringArrayJavascript(place.getTypes().toArray()) : null,
+              // utcOffset: place.getUtcOffsetMinutes().intValue()
             });
           }
           else if (resultCode === AutocompleteActivity.RESULT_ERROR) {
