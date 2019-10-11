@@ -1,6 +1,6 @@
 import { ios } from 'tns-core-modules/application';
 import * as utils from "tns-core-modules/utils/utils";
-import { PlaceCoordinates, PlaceResult, PlaceViewport, ShowOptions } from './autocomplete.common';
+import { PlaceCoordinates, PlaceResult, PlaceViewport, PlaceAddressComponent, ShowOptions } from './autocomplete.common';
 
 class AutocompleteViewControllerDelegateImpl extends NSObject implements GMSAutocompleteViewControllerDelegate {
   static ObjCProtocols = [GMSAutocompleteViewControllerDelegate];
@@ -30,6 +30,22 @@ class AutocompleteViewControllerDelegateImpl extends NSObject implements GMSAuto
     };
   }
 
+  private addressComponentsToPlaceAddressComponents(addressComponents: NSArray<GMSAddressComponent>): PlaceAddressComponent[] {
+    if (!addressComponents) {
+      return null;
+    }
+
+    const array: PlaceAddressComponent[] = [];
+    for ( let i = 0; i < addressComponents.count; ++i) {
+      array[i] = {
+        name : addressComponents[i].name,
+        shortName : addressComponents[i].shortName,
+        types :  utils.ios.collections.nsArrayToJSArray(addressComponents[i].types)
+      };
+    }
+    return array;
+  }
+
   didRequestAutocompletePredictions(viewController: GMSAutocompleteViewController): void {
     UIApplication.sharedApplication.networkActivityIndicatorVisible = true;
   }
@@ -52,6 +68,7 @@ class AutocompleteViewControllerDelegateImpl extends NSObject implements GMSAuto
       viewport: this.boundsToViewport(place.viewport),
       websiteUri: place.website ? place.website.absoluteString : null,
       types: place.types ? utils.ios.collections.nsArrayToJSArray(place.types) : null,
+      addressComponents: this.addressComponentsToPlaceAddressComponents(place.addressComponents)
     });
   }
 
@@ -129,6 +146,10 @@ export class PlaceAutocomplete {
 
           if (fields.indexOf('types') > -1) {
             selectedFields |= GMSPlaceField.Types;
+          }
+
+          if (fields.indexOf('address_components') > -1) {
+            selectedFields |= GMSPlaceField.AddressComponents;
           }
 
           placeFields = selectedFields;

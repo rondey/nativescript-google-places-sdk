@@ -10,7 +10,8 @@ type PlaceFields =
   'viewport' |
   'website_uri' |
   'types' |
-  "utc_offset";
+  "utc_offset" |
+  "address_components";
 
 export interface PlaceCoordinates {
   latitude: number;
@@ -20,6 +21,12 @@ export interface PlaceCoordinates {
 export interface PlaceViewport {
   southwest: PlaceCoordinates;
   northeast: PlaceCoordinates;
+}
+
+export interface PlaceAddressComponent {
+  name: string;
+  shortName: string;
+  types: string[];
 }
 
 export interface PlaceResult {
@@ -35,6 +42,7 @@ export interface PlaceResult {
   websiteUri?: string;
   types?: string[];
   utcOffset?: number;
+  addressComponents?: PlaceAddressComponent[];
 }
 
 export interface ShowOptions {

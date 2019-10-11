@@ -1,6 +1,6 @@
 import * as app from 'tns-core-modules/application';
 import { ad } from 'tns-core-modules/utils/utils';
-import { PlaceCoordinates, PlaceResult, PlaceViewport, ShowOptions } from './autocomplete.common';
+import { PlaceCoordinates, PlaceResult, PlaceViewport, PlaceAddressComponent, ShowOptions } from './autocomplete.common';
 import LatLng = com.google.android.gms.maps.model.LatLng;
 import Place = com.google.android.libraries.places.api.model.Place;
 import Places = com.google.android.libraries.places.api.Places;
@@ -10,10 +10,10 @@ import AutocompleteActivity = com.google.android.libraries.places.widget.Autocom
 export class PlaceAutocomplete {
   private static readonly PLACE_AUTOCOMPLETE_REQUEST_CODE = 101;
 
-  private static convertEnumArrayJavaToStringArrayJavascript(arrayNative: native.Array<any>) {
+  private static convertEnumArrayJavaToStringArrayJavascript(nativeArray: native.Array<any>) {
     const array = [];
-    for ( let i = 0; i < arrayNative.length; ++i) {
-      array[i] = arrayNative[i].toString();
+    for ( let i = 0; i < nativeArray.length; ++i) {
+      array[i] = nativeArray[i].toString();
     }
     return array;
   }
@@ -44,6 +44,23 @@ export class PlaceAutocomplete {
         longitude: bounds.southwest.longitude
       }
     };
+  }
+
+  private static addressComponentsToPlaceAddressComponents(addressComponents: java.util.List<com.google.android.libraries.places.api.internal.impl.net.pablo.PlaceResult.AddressComponent>): PlaceAddressComponent[] {
+    if (!addressComponents) {
+      return null;
+    }
+
+    const array: PlaceAddressComponent[] = [];
+    const addressComponentsArray = addressComponents.toArray();
+    for ( let i = 0; i < addressComponentsArray.length; ++i) {
+      array[i] = {
+        name : addressComponentsArray[i].getName(),
+        shortName : addressComponentsArray[i].getShortName(),
+        types :  this.convertEnumArrayJavaToStringArrayJavascript(addressComponentsArray[i].getTypes().toArray())
+      };
+    }
+    return array;
   }
 
   static show(options?: ShowOptions): Promise<PlaceResult> {
@@ -106,6 +123,10 @@ export class PlaceAutocomplete {
           selectedFields = selectedFields.concat(Place.Field.UTC_OFFSET);
         }
 
+        if (fields.indexOf('address_components') > -1) {
+          selectedFields = selectedFields.concat(Place.Field.ADDRESS_COMPONENTS);
+        }
+
         fieldsSetting = java.util.Arrays.asList(selectedFields);
       }
 
@@ -144,7 +165,8 @@ export class PlaceAutocomplete {
               viewport: this.viewportToPlaceViewport(place.getViewport()),
               websiteUri: place.getWebsiteUri() ? place.getWebsiteUri().toString() : null,
               types: place.getTypes() ? this.convertEnumArrayJavaToStringArrayJavascript(place.getTypes().toArray()) : null,
-              // utcOffset: place.getUtcOffsetMinutes().intValue()
+              // utcOffset: place.getUtcOffsetMinutes().intValue(),
+              addressComponents: this.addressComponentsToPlaceAddressComponents(place.getAddressComponents().asList())
             });
           }
           else if (resultCode === AutocompleteActivity.RESULT_ERROR) {

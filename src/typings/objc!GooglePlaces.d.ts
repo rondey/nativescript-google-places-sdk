@@ -9,7 +9,7 @@ declare class GMSAddressComponent extends NSObject {
 
 	readonly shortName: string;
 
-	readonly type: string;
+	readonly types: NSArray<string>;
 }
 
 declare const enum GMSAutocompleteBoundsMode {
