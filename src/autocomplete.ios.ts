@@ -1,6 +1,23 @@
 import { ios } from 'tns-core-modules/application';
 import * as utils from "tns-core-modules/utils/utils";
-import { PlaceCoordinates, PlaceResult, PlaceViewport, PlaceAddressComponent, ShowOptions } from './autocomplete.common';
+import { PlaceCoordinates, PlaceResult, PlaceViewport, PlaceAddressComponent, ShowOptions, CurrentPlaceResult } from './autocomplete.common';
+
+function getPlaceResult(place: GMSPlace): PlaceResult {
+  return {
+    address: place.formattedAddress,
+    id: place.placeID,
+    latLng: this.locationCoordinateToPlaceCoordinates(place.coordinate),
+    name: place.name,
+    phoneNumber: place.phoneNumber,
+    priceLevel: place.priceLevel,
+    rating: place.rating,
+    userRatingsTotal: place.userRatingsTotal,
+    viewport: this.boundsToViewport(place.viewport),
+    websiteUri: place.website ? place.website.absoluteString : null,
+    types: place.types ? utils.ios.collections.nsArrayToJSArray(place.types) : null,
+    addressComponents: this.addressComponentsToPlaceAddressComponents(place.addressComponents)
+  };
+}
 
 class AutocompleteViewControllerDelegateImpl extends NSObject implements GMSAutocompleteViewControllerDelegate {
   static ObjCProtocols = [GMSAutocompleteViewControllerDelegate];
@@ -56,20 +73,7 @@ class AutocompleteViewControllerDelegateImpl extends NSObject implements GMSAuto
 
   viewControllerDidAutocompleteWithPlace(viewController: GMSAutocompleteViewController, place: GMSPlace): void {
     viewController.dismissViewControllerAnimatedCompletion(true, null);
-    this.resolve({
-      address: place.formattedAddress,
-      id: place.placeID,
-      latLng: this.locationCoordinateToPlaceCoordinates(place.coordinate),
-      name: place.name,
-      phoneNumber: place.phoneNumber,
-      priceLevel: place.priceLevel,
-      rating: place.rating,
-      userRatingsTotal: place.userRatingsTotal,
-      viewport: this.boundsToViewport(place.viewport),
-      websiteUri: place.website ? place.website.absoluteString : null,
-      types: place.types ? utils.ios.collections.nsArrayToJSArray(place.types) : null,
-      addressComponents: this.addressComponentsToPlaceAddressComponents(place.addressComponents)
-    });
+    this.resolve(getPlaceResult(place));
   }
 
   viewControllerDidFailAutocompleteWithError(viewController: GMSAutocompleteViewController, error: NSError): void {
@@ -89,15 +93,8 @@ class AutocompleteViewControllerDelegateImpl extends NSObject implements GMSAuto
 export class PlaceAutocomplete {
   private static autocompleteControllerDelegate: AutocompleteViewControllerDelegateImpl;
 
-  static show(options?: ShowOptions): Promise<PlaceResult> {
-    return new Promise((resolve, reject) => {
-      const autocompleteController = GMSAutocompleteViewController.new();
-      let placeFields: GMSPlaceField = GMSPlaceField.All;
-
-      this.autocompleteControllerDelegate = <AutocompleteViewControllerDelegateImpl>AutocompleteViewControllerDelegateImpl.new();
-      this.autocompleteControllerDelegate.resolve = resolve;
-      this.autocompleteControllerDelegate.reject = reject;
-      autocompleteController.delegate = this.autocompleteControllerDelegate;
+  private static getSelectedFields(options: ShowOptions): GMSPlaceField {
+      const placeFields: GMSPlaceField = GMSPlaceField.All;
 
       if (options) {
         if (options.fields && options.fields.length > 0) {
@@ -151,29 +148,78 @@ export class PlaceAutocomplete {
           if (fields.indexOf('address_components') > -1) {
             selectedFields |= GMSPlaceField.AddressComponents;
           }
-
-          placeFields = selectedFields;
+          return selectedFields;
         }
 
-        if (options.locationBias) {
-          const { locationBias } = options;
-
-          autocompleteController.autocompleteBounds = GMSCoordinateBounds.alloc().initWithCoordinateCoordinate(
-            {
-              latitude: locationBias.southwest.latitude,
-              longitude: locationBias.southwest.longitude
-            },
-            {
-              latitude: locationBias.northeast.latitude,
-              longitude: locationBias.northeast.longitude
-            }
-          );
-        }
       }
+      return placeFields;
+    }
 
+  static show(options?: ShowOptions): Promise<PlaceResult> {
+    return new Promise((resolve, reject) => {
+      const autocompleteController = GMSAutocompleteViewController.new();
+
+      this.autocompleteControllerDelegate = <AutocompleteViewControllerDelegateImpl>AutocompleteViewControllerDelegateImpl.new();
+      this.autocompleteControllerDelegate.resolve = resolve;
+      this.autocompleteControllerDelegate.reject = reject;
+      autocompleteController.delegate = this.autocompleteControllerDelegate;
+      const placeFields = this.getSelectedFields(options);
+
+      if (options && options.locationBias) {
+        const { locationBias } = options;
+
+        autocompleteController.autocompleteBounds = GMSCoordinateBounds.alloc().initWithCoordinateCoordinate(
+          {
+            latitude: locationBias.southwest.latitude,
+            longitude: locationBias.southwest.longitude
+          },
+          {
+            latitude: locationBias.northeast.latitude,
+            longitude: locationBias.northeast.longitude
+          }
+        );
+      }
       autocompleteController.placeFields = placeFields;
 
       ios.rootController.presentViewControllerAnimatedCompletion(autocompleteController, true, null);
+    });
+  }
+
+  static currentPlace(options?: ShowOptions): Promise<CurrentPlaceResult[]> {
+    return new Promise((resolve, reject) => {
+      const placesClient: GMSPlacesClient = GMSPlacesClient.sharedClient();
+      placesClient.findPlaceLikelihoodsFromCurrentLocationWithPlaceFieldsCallback(this.getSelectedFields(options), (placeLikelihoodList, error) => {
+        if (error) {
+          reject(error.localizedDescription);
+        }
+        else {
+          const array = [];
+          for ( let i = 0; i < placeLikelihoodList.count; ++i) {
+            array[i] = {
+              likelihood: placeLikelihoodList[i].likelihood,
+              place: getPlaceResult(placeLikelihoodList[i].place)
+            };
+          }
+          resolve(array);
+        }
+      });
+
+    });
+  }
+
+  static fetchPlace(id: string, options?: ShowOptions): Promise<PlaceResult> {
+    return new Promise((resolve, reject) => {
+      const fieldsSetting: GMSPlaceField = this.getSelectedFields(options);
+      const placesClient: GMSPlacesClient = GMSPlacesClient.sharedClient();
+
+      placesClient.fetchPlaceFromPlaceIDPlaceFieldsSessionTokenCallback(id, fieldsSetting, null, (place, error) => {
+        if (error) {
+          reject(error.localizedDescription);
+        }
+        else {
+          resolve(getPlaceResult(place));
+        }
+      });
     });
   }
 }

@@ -45,6 +45,11 @@ export interface PlaceResult {
   addressComponents?: PlaceAddressComponent[];
 }
 
+export interface CurrentPlaceResult {
+  likelihood: number;
+  place: PlaceResult;
+}
+
 export interface ShowOptions {
   fields?: PlaceFields[];
   locationBias?: {

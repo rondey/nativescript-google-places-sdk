@@ -13,6 +13,23 @@ export declare class PlaceAutocomplete {
    * @param options.locationBias.northeast
    */
   static show(options?: ShowOptions): Promise<PlaceResult>;
+
+  /**
+   * Get an array of possible current place
+   *
+   * @param options (optional)
+   * @param options.fields (optional)
+   */
+  static currentPlace(options?: ShowOptions): Promise<CurrentPlaceResult[]>;
+
+  /**
+   * Get details of a place
+   *
+   * @param id
+   * @param options (optional)
+   * @param options.fields (optional)
+   */
+  static fetchPlace(id: string, options?: ShowOptions): Promise<PlaceResult>;
 }
 
 export declare class Place {
